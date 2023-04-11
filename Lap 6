@@ -1,0 +1,96 @@
+
+--1. Hãy xây dựng hàm đưa ra thông tin các sản phẩm của hãng có tên nhập từ bàn phím
+CREATE FUNCTION fn_DSSPtheohangsx (@tenhang nvarchar(20))
+returns @bang table(
+                         masp nvarchar(10), tensp nvarchar(20),
+						 soluong int, mausac nvarchar(20),
+						 giaban float, donvitinh nvarchar(10), mota nvarchar(max)
+				   )
+as 
+begin
+     insert into @bang 
+	                   select masp, tensp, soluong, mausac, giaban, donvitinh, mota
+					   from Sanpham inner join Hangsx 
+					   on Sanpham.mahangsx = Hangsx.Mahangsx
+					   where Tenhang = @Tenhang
+	 return
+end
+SELECT * FROM fn_DSSPtheohangsx('Oppo')
+--2. Hãy viết hàm đưa ra danh sách các sản phẩm và hãng sản xuất tương ứng đã được nhập từ ngày x đến ngày y, với x,y được nhập từ bàn phím
+CREATE FUNCTION fn_DSSPtheongaysx(@ngayx NVARCHAR(20), @ngayy NVARCHAR(20))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT sp.tensp, hsx.tenhang, n.soluongN, n.dongiaN
+    FROM Sanpham sp
+    INNER JOIN Hangsx hsx ON sp.mahangsx = hsx.mahangsx
+    INNER JOIN Nhap n ON sp.masp = n.masp
+    WHERE n.ngaynhap BETWEEN @ngayx AND @ngayy
+)
+SELECT * FROM fn_DSSPtheongaysx('2019-03-05', '2020-07-18')
+--3. Hãy xây dựng hàm đưa ra ds các sp và 1 lựa chọn, nếu lựa chọn =0 thì đưa ra ds có  soluong =0, ngược lại lựa chọn =1 thì đưa ra ds có sluong >0
+CREATE FUNCTION fn_DSSPtheohangsxva1lc(@hangsx NVARCHAR(50), @luachon INT)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT sp.masp, sp.tensp, sp.soluong
+    FROM Sanpham sp
+    INNER JOIN Hangsx hsx ON sp.mahangsx = hsx.mahangsx
+    WHERE hsx.tenhang = @hangsx AND (@luachon= 0 AND sp.soluong = 0 OR @luachon = 1 AND sp.soluong > 0)
+)
+SELECT *FROM fn_DSSPtheohangsxva1lc('Oppo', 1)
+--4. Hãy xây dựng hàm đưa ra ds các nhân viên có tên phòng nhập từ bàn phím
+drop function fn_DSNVtheophong
+CREATE FUNCTION fn_DSNVtheophong(@tenPhong NVARCHAR(50))
+RETURNS TABLE
+AS
+RETURN 
+(
+    SELECT *
+    FROM Nhanvien
+    WHERE Phong = @tenPhong
+)
+
+SELECT * FROM fn_DSNVtheophong('Kế toán')
+
+--5 hãy xây dựng hàm đưa ra ds các hãng sx có địa chỉ nhập từ bàn phím(lưu ý _dùng hàm like để lọc)
+
+CREATE FUNCTION fn_DSCachang(@diachi NVARCHAR(50))
+RETURNS TABLE
+AS
+RETURN 
+    SELECT tenhang, diachi, sodt, email
+    FROM Hangsx
+    WHERE Diachi LIKE '%' + @diachi + '%';
+
+SELECT * FROM fn_DSCachang('Vn')
+
+--6. Hãy viết hàm đưa ra danh sách các sản phẩm và hãng sản xuất tương ứng đã được xuất từ năm x đến năm y, với x,y nhập từ bàn phím.
+CREATE FUNCTION fn_DSSPvaHSX (@namx int, @namy int)
+RETURNS TABLE
+AS
+RETURN
+    SELECT s.tensp, h.tenhang
+    FROM Sanpham s 
+    JOIN Hangsx h ON s.mahangsx = h.mahangsx
+    JOIN Xuat x ON s.masp = x.masp
+    WHERE YEAR(x.ngayxuat) BETWEEN @namx AND @namy;
+
+SELECT * FROM fn_DSSPvaHSX('2019', '2020')
+
+--7. Hãy xây dựng hàm đưa ra danh sách các sản phẩm theo hãng sản xuất và 1 lựa chọn, nếu lựa chọn = 0 thì đưa ra danh sách các sản phẩm đã được nhập, ngược lại lựa chọn =1 thì đưa ra danh sách các sản phẩm đã được xuất.
+
+--8. Hãy xây dựng hàm đưa ra ds các nhân viên đã nhập hàng vào ngày được đưa  từ vào phím
+CREATE FUNCTION fn_NVDaNhapHang(@ngayNhap DATE)
+RETURNS TABLE
+AS
+RETURN
+SELECT DISTINCT NV.manv, NV.tennv, NV.diachi, NV.sodt, NV.email, NV.phong
+FROM Nhap N
+JOIN Nhanvien NV ON N.manv = NV.manv
+WHERE N.ngaynhap = @ngayNhap
+
+SELECT * FROM fn_NVDaNhapHang('2020-05-17')
+
